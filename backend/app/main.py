@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client
 import os
@@ -23,6 +23,18 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+
+supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ANON_KEY"))
+
+
+async def get_current_user(token: str):
+    try:
+        user = supabase.auth.get_user(token)
+        return user
+    except:
+        raise HTTPException(401, "Invalid or missing token")
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -34,3 +46,7 @@ def get_users():
 @app.get("/api/test")
 def test():
     return {"message": "Hello from FastAPI!"}
+
+@app.get("/protected/user")
+async def protected_route(user=Depends(get_current_user)):
+    return user
